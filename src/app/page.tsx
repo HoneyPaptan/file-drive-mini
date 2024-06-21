@@ -7,29 +7,34 @@ import {
   SignedIn,
   SignOutButton,
   SignedOut,
+  useOrganization,
+  useUser,
 } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 export default function Home() {
+  const user = useUser();
+  const organization = useOrganization();
   const createFile = useMutation(api.files.createFile);
-  const getfiles = useQuery(api.files.getFiles);
+
+  // logic for organisation id and if not in an organization then use the user id
+  let orgId = null;
+  if (organization.isLoaded && user.isLoaded) {
+    // when both of these are loaded then nset the orgid to one which is present
+    orgId = organization.organization?.id ?? user.user?.id;
+  }
+  const getfiles = useQuery(api.files.getFiles, orgId ? { orgId } : "skip"); // if orgid is present then use it otherwise skip
 
   return (
     <div className="flex min-h-screen justify-center items-center flex-col">
-      <SignedIn>
-        <SignOutButton>
-          <Button>Sign Out</Button>
-        </SignOutButton>
-      </SignedIn>
-      <SignedOut>
-        <SignInButton mode="modal">
-          <Button>Sign In</Button>
-        </SignInButton>
-      </SignedOut>
       <Button
         onClick={() => {
+          if (!orgId) {
+            return;
+          }
           createFile({
             name: "Hello world",
+            orgId: orgId,
           });
         }}
       >
