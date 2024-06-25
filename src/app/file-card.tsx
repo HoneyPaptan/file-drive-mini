@@ -27,13 +27,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Doc } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { DeleteIcon, MoreVertical, TrashIcon } from "lucide-react";
-import { useState } from "react";
+import {
+  DeleteIcon,
+  FileTextIcon,
+  GanttChartIcon,
+  ImageIcon,
+  MoreVertical,
+  TrashIcon,
+} from "lucide-react";
+import { ReactNode, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import Image from "next/image";
+import { StaticImport } from "next/dist/shared/lib/get-img-props";
 
 function FileCardActions({ file }: { file: Doc<"files"> }) {
   const deleteFile = useMutation(api.files.deleteFile);
@@ -53,12 +62,11 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                // todo: actually delete the file
                 const promise = deleteFile({
                   fileId: file._id,
                 });
                 toast.promise(promise, {
-                  loading: "Deleting  your file",
+                  loading: "Deleting your file",
                   success: "File Deleted Successfully",
                   error: "Error while Deleting. Please try again",
                 });
@@ -88,18 +96,33 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
   );
 }
 
-export function FileCard({ file }: { file: Doc<"files"> }) {
+export function FileCard({
+  file,
+}: {
+  file: Doc<"files"> & { url: string | StaticImport };
+}) {
+  const types = {
+    image: <ImageIcon />,
+    pdf: <FileTextIcon />,
+    csv: <GanttChartIcon />,
+  } as Record<Doc<"files">["type"], ReactNode>;
+
   return (
     <Card>
       <CardHeader className="relative">
-        <CardTitle>{file.name}</CardTitle>
+        <CardTitle className="flex gap-2">
+          {" "}
+          <div className="flex justify-center">{types[file.type]}</div>
+          {file.name}
+        </CardTitle>
         <div className="absolute top-2 right-2">
           <FileCardActions file={file} />
         </div>
-        <CardDescription>Card Description</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Card Content</p>
+        {file.type === "image" && (
+          <Image alt={file.name} width="200" height="100" src={file.url} />
+        )}
       </CardContent>
       <CardFooter>
         <Button>Download</Button>

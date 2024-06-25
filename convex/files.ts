@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values"
 import {mutation, MutationCtx, query, QueryCtx} from "./_generated/server"
 import { getUser } from "./users"
+import { filesTypes } from "./schema";
 
 
 // for uploading files URL generator
@@ -35,7 +36,8 @@ export const createFile = mutation({
     args: {
         name: v.string(),
         fileId: v.id("_storage"),
-        orgId: v.string()
+        orgId: v.string(),
+        type: filesTypes
         
     },
     async handler(ctx , args){
@@ -58,14 +60,16 @@ export const createFile = mutation({
         await ctx.db.insert('files', {
             name: args.name,
             orgId: args.orgId,
-            fileId: args.fileId
+            fileId: args.fileId,
+            type: args.type
         })
     }
 })
 
 export const getFiles = query({
     args : {
-        orgId: v.string()
+        orgId: v.string(),
+        type: v.optional(filesTypes),
     },
     async handler (ctx, args){
         const identity =  await ctx.auth.getUserIdentity()
@@ -81,10 +85,24 @@ export const getFiles = query({
         if(!hasAccess){
             return [] // so ui doesnt crash for user
         }
+      
 
-        return ctx.db.query('files')
+        let files = await ctx.db.query('files')
         .withIndex('by_orgId', (q) => q.eq("orgId", args.orgId))
         .collect()
+        if (args.type) {
+            files = files.filter((file) => file.type === args.type);
+          }
+      
+          const filesWithUrl = await Promise.all(
+            files.map(async (file) => ({
+              ...file,
+              url: await ctx.storage.getUrl(file.fileId),
+            }))
+          );
+      
+        return filesWithUrl;
+       
     }
 })
 

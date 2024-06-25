@@ -6,6 +6,8 @@ import { api } from "../../convex/_generated/api";
 
 import { UploadButton } from "./upload-button";
 import { FileCard } from "./file-card";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const user = useUser();
@@ -22,16 +24,40 @@ export default function Home() {
 
   return (
     <main className="container mx-auto pt-12">
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold tracking-tighter">Your Files</h1>
-        <UploadButton />
-      </div>
+      {/* // page spinner */}
+      {getfiles === undefined && (
+        <div className="flex flex-col mt-24 items-center">
+          <Loader2 className=" h-24 w-24 animate-spin" />
+        </div>
+      )}
 
-      <div className="mt-10 grid grid-cols-4 gap-4">
-        {getfiles?.map((file) => {
-          return <FileCard key={file._id} file={file} />;
-        })}
-      </div>
+      {getfiles && getfiles.length === 0 && (
+        <div className="flex flex-col items-center mt-20 gap-2">
+          <Image
+            alt="image of an empty file"
+            src="/empty.svg"
+            width="300"
+            height="300"
+          />
+          <div className="text-xl tracking-tighter">
+            You have no files, upload one now
+          </div>
+          <UploadButton />
+        </div>
+      )}
+      {getfiles && getfiles.length >= 1 && (
+        <>
+          <div className="flex justify-between items-center">
+            <h1 className="text-4xl font-bold tracking-tighter">Your Files</h1>
+            <UploadButton />
+          </div>
+          <div className="mt-10 grid grid-cols-4 gap-4">
+            {getfiles?.map((file) => {
+              return <FileCard key={file._id} file={file} />;
+            })}
+          </div>
+        </>
+      )}
     </main>
   );
 }
